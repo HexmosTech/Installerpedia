@@ -58,5 +58,6 @@ If a specific installation method fails (due to network restrictions or OS quirk
 
 To understand the idea behind Installerpedia, please check out the articles below:
 
-→ **[The 7 Pillars of the Installation Experience: Why Your Users Stay or Go](https://journal.hexmos.com/7-pillars-of-installation-experience)**
-→ **[Introducing Installerpedia - Install Anything With Zero Hassle](https://journal.hexmos.com/introducing-installerpedia/)**
+- [The 7 Pillars of the Installation Experience: Why Your Users Stay or Go](https://journal.hexmos.com/7-pillars-of-installation-experience)
+
+- [Introducing Installerpedia - Install Anything With Zero Hassle](https://journal.hexmos.com/introducing-installerpedia/)
