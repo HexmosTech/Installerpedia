@@ -1,4 +1,4 @@
-# Installerpedia Manager (IPM)
+# ipm: installerpedia manager
 
 Installerpedia is the authoritative source for software installation. It eliminates the "manual crawl" through READMEs and broken dependency chains by providing a structured, automated way to install any tool.
 
@@ -54,3 +54,9 @@ If a project requires any dependencies like **Python, Node.js, Git, or Docker**,
 If a specific installation method fails (due to network restrictions or OS quirks), IPM doesn't give up. It provides **alternative paths** such as switching from a binary install to a package manager (npm/pip) or a source build—to ensure you get the tool running.
 
 
+## Learn More
+
+To understand the idea behind Installerpedia, please check out the articles below:
+
+→ **[The 7 Pillars of the Installation Experience: Why Your Users Stay or Go](https://journal.hexmos.com/7-pillars-of-installation-experience)**
+→ **[Introducing Installerpedia - Install Anything With Zero Hassle](https://journal.hexmos.com/introducing-installerpedia/)**
