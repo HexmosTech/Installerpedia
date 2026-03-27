@@ -61,3 +61,22 @@ To understand the idea behind Installerpedia, please check out the articles belo
 - [The 7 Pillars of the Installation Experience: Why Your Users Stay or Go](https://journal.hexmos.com/7-pillars-of-installation-experience)
 
 - [Introducing Installerpedia - Install Anything With Zero Hassle](https://journal.hexmos.com/introducing-installerpedia/)
+
+
+
+
+## License
+
+`ipm` is distributed under a modified variant of **Sustainable Use License (SUL)**.
+
+> [!NOTE]
+>
+> **What this means:**
+>
+> - ✅ **Source Available** — Full source code is available
+> - ❌ **No Resale** — Cannot be resold or offered as a competing service
+> - ❌ **No Redistribution** — Cannot redistribute modified versions commercially
+
+
+For detailed terms, examples of permitted and prohibited uses, and definitions, see the full
+[LICENSE.md](LICENSE.md).
