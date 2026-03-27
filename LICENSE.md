@@ -138,3 +138,5 @@ broad use and modification while reserving exclusive commercialization rights to
 This software is not "open source" as defined by the [Open Source Initiative](https://opensource.org/),
 as open source licenses cannot include limitations on commercial use. However, this license provides many
 of the same practical benefits for internal and non-commercial use.
+
+**If you want to use ipm / Installerpedia for something not permitted by this license**, contact us at [rijulrajtkeey2@gmail.com](mailto:rijulrajtkeey2@gmail.com) to discuss a commercial agreement.
