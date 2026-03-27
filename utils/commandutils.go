@@ -17,21 +17,21 @@ func GetCommands(commands []types.Instruction) []string {
 }
 
 func GetVenvBinPath(baseDir string, binary string) string {
-    // Windows uses 'Scripts', Unix uses 'bin'
-    subDir := "bin"
-    if runtime.GOOS == "windows" {
-        subDir = "Scripts"
-    }
-    
-    path := filepath.Join(baseDir, ".venv", subDir, binary)
-    if runtime.GOOS == "windows" && binary == "python" {
-        path += ".exe"
-    }
-    
-    if _, err := os.Stat(path); err == nil {
-        return path
-    }
-    return ""
+	// Windows uses 'Scripts', Unix uses 'bin'
+	subDir := "bin"
+	if runtime.GOOS == "windows" {
+		subDir = "Scripts"
+	}
+
+	path := filepath.Join(baseDir, ".venv", subDir, binary)
+	if runtime.GOOS == "windows" && binary == "python" {
+		path += ".exe"
+	}
+
+	if _, err := os.Stat(path); err == nil {
+		return path
+	}
+	return ""
 }
 
 func TruncateDesc(s string) string {
@@ -46,5 +46,3 @@ func TruncateDesc(s string) string {
 
 	return string(r[:max]) + "…"
 }
-
-

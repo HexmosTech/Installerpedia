@@ -5,19 +5,21 @@ import (
 	"regexp"
 	"strings"
 )
+
 var gitCloneRegex = regexp.MustCompile(`\bgit\s+clone\b`)
+
 func IsExternallyManagedError(output string) bool {
-    return strings.Contains(output, "externally-managed-environment") || 
-           strings.Contains(output, "PEP 668")
+	return strings.Contains(output, "externally-managed-environment") ||
+		strings.Contains(output, "PEP 668")
 }
 
 func IsPermissionError(output string) bool {
-    lower := strings.ToLower(output)
-    return strings.Contains(lower, "permission denied") ||
-        strings.Contains(lower, "operation not permitted") ||
-        strings.Contains(lower, "eacces") ||
-        strings.Contains(lower, "access to the path") && strings.Contains(lower, "denied") ||
-        strings.Contains(lower, "unauthorizedaccessexception")
+	lower := strings.ToLower(output)
+	return strings.Contains(lower, "permission denied") ||
+		strings.Contains(lower, "operation not permitted") ||
+		strings.Contains(lower, "eacces") ||
+		strings.Contains(lower, "access to the path") && strings.Contains(lower, "denied") ||
+		strings.Contains(lower, "unauthorizedaccessexception")
 }
 
 func IsGitCloneDestExistsError(output string) (bool, string) {
@@ -47,4 +49,3 @@ func RemoveGitCloneCommands(cmds []types.Instruction) []types.Instruction {
 	}
 	return out
 }
-

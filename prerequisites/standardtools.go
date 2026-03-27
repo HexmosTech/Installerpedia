@@ -245,19 +245,19 @@ var Dependencies = []Dependency{
 		},
 	},
 	{
-        Name: "Chocolatey",
-        Regexes: map[string]*regexp.Regexp{
-            "windows": regexp.MustCompile(`(?i)\bchoco\b.*is not recognized`),
-        },
-        Install: map[string][]string{
-            "windows": {
-                "Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))",
-            },
-        },
-        PathAugment: map[string][]string{
-            "windows": {fmt.Sprintf("%s\\Chocolatey\\bin", os.Getenv("ProgramData"))},
-        },
-    },
+		Name: "Chocolatey",
+		Regexes: map[string]*regexp.Regexp{
+			"windows": regexp.MustCompile(`(?i)\bchoco\b.*is not recognized`),
+		},
+		Install: map[string][]string{
+			"windows": {
+				"Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))",
+			},
+		},
+		PathAugment: map[string][]string{
+			"windows": {fmt.Sprintf("%s\\Chocolatey\\bin", os.Getenv("ProgramData"))},
+		},
+	},
 	{
 		Name: "Go (Golang)",
 		Regexes: map[string]*regexp.Regexp{
@@ -292,35 +292,35 @@ var Dependencies = []Dependency{
 		},
 	},
 	{
-        Name: "Cargo (Rust)",
-        Regexes: map[string]*regexp.Regexp{
-            "windows": regexp.MustCompile(`(?i)\bcargo\b.*is not recognized`),
-            "default": regexp.MustCompile(`(?i)\bcargo\b[:\s]+(?:command\s+)?not\s+found`),
-        },
-        Install: map[string][]string{
-            "darwin": {
-                "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y",
-            },
-            "windows": {
-                "winget install --id Rustlang.Rustup -e",
-            },
-            "debian": {
-                "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y",
-            },
-            "rpm": {
-                "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y",
-            },
-            "arch": {
-                "sudo pacman -Sy --needed --noconfirm rustup",
-                "rustup default stable",
-            },
-        },
-        PathAugment: map[string][]string{
-            "windows": {fmt.Sprintf("%s\\Color\\.cargo\\bin", os.Getenv("USERPROFILE"))},
-            "darwin":  {fmt.Sprintf("%s/.cargo/bin", os.Getenv("HOME"))},
-            "linux":   {fmt.Sprintf("%s/.cargo/bin", os.Getenv("HOME"))},
-        },
-    },
+		Name: "Cargo (Rust)",
+		Regexes: map[string]*regexp.Regexp{
+			"windows": regexp.MustCompile(`(?i)\bcargo\b.*is not recognized`),
+			"default": regexp.MustCompile(`(?i)\bcargo\b[:\s]+(?:command\s+)?not\s+found`),
+		},
+		Install: map[string][]string{
+			"darwin": {
+				"curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y",
+			},
+			"windows": {
+				"winget install --id Rustlang.Rustup -e",
+			},
+			"debian": {
+				"curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y",
+			},
+			"rpm": {
+				"curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y",
+			},
+			"arch": {
+				"sudo pacman -Sy --needed --noconfirm rustup",
+				"rustup default stable",
+			},
+		},
+		PathAugment: map[string][]string{
+			"windows": {fmt.Sprintf("%s\\Color\\.cargo\\bin", os.Getenv("USERPROFILE"))},
+			"darwin":  {fmt.Sprintf("%s/.cargo/bin", os.Getenv("HOME"))},
+			"linux":   {fmt.Sprintf("%s/.cargo/bin", os.Getenv("HOME"))},
+		},
+	},
 }
 
 func HandleMissingDependencies(output string) (bool, string, error) {

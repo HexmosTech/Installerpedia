@@ -21,9 +21,9 @@ import (
 	"time"
 
 	endpoints "ipm/endpoints"
-	tracker "ipm/tracker"
-	prerequisites "ipm/prerequisites"
 	live_generation "ipm/live_generation"
+	prerequisites "ipm/prerequisites"
+	tracker "ipm/tracker"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/fatih/color"
@@ -37,7 +37,6 @@ var liveLogs strings.Builder
 var activeMethod string
 var activeCommands string
 var doneTracking = make(chan bool, 1)
-
 
 type NavigationAction int
 
@@ -55,27 +54,23 @@ var (
 
 const indent = "    "
 
-
-
 // 1. Define the regex patterns for specific package managers
 var (
-	debianRegex = regexp.MustCompile(`\b(apt|apt-get|dpkg)\b`)
-	rpmRegex    = regexp.MustCompile(`\b(dnf|yum|rpm|zypper)\b`)
-	archRegex   = regexp.MustCompile(`\b(pacman|yay|paru|makepkg)\b`)
+	debianRegex   = regexp.MustCompile(`\b(apt|apt-get|dpkg)\b`)
+	rpmRegex      = regexp.MustCompile(`\b(dnf|yum|rpm|zypper)\b`)
+	archRegex     = regexp.MustCompile(`\b(pacman|yay|paru|makepkg)\b`)
 	unixToolRegex = regexp.MustCompile(`\b(brew|bash|sh|zsh)\b`)
 
 	// windowsRegex identifies Windows-specific installers while avoiding false positives on Linux.
 	windowsRegex = regexp.MustCompile(
 		`\b(winget|choco|scoop)\b` + "|" + // Standard package managers
-		`(\b(irm|iwr|iex)\b[^\n|]*\|[^\n]*\b(iex|irm|iwr)\b)` + "|" + // PowerShell pipes (irm...|iex)
-		`(\b(irm|iwr|iex)\b[^\n]*https?://[^\n\s]+)` + "|" + // Downloaders + URL
-		`(\b(irm|iwr|iex)\b[^\n]*\.ps1)`, // Downloaders + .ps1 script
+			`(\b(irm|iwr|iex)\b[^\n|]*\|[^\n]*\b(iex|irm|iwr)\b)` + "|" + // PowerShell pipes (irm...|iex)
+			`(\b(irm|iwr|iex)\b[^\n]*https?://[^\n\s]+)` + "|" + // Downloaders + URL
+			`(\b(irm|iwr|iex)\b[^\n]*\.ps1)`, // Downloaders + .ps1 script
 	)
 
 	serverStartRegex = regexp.MustCompile(`(?i)\b(npm\s+run\s+(dev|start)|npm\s+start|yarn\s+dev|yarn\s+start|pnpm\s+dev|pnpm\s+start|vite|next\s+dev|node\s+server\.js)\b`)
 )
-
-
 
 func isServerStartCommand(cmd string) bool {
 	return serverStartRegex.MatchString(strings.ToLower(cmd))
@@ -133,69 +128,69 @@ func InstallCommandWithMatches(matches []*types.RepoDocumentFull) {
 	}
 }
 
-
 func checkForRepoUpdates(repoName string) (*types.RepoDocumentFull, bool) {
-    fmt.Printf("🔍 %s\n", color.CyanString("Checking for updates for %s...", repoName))
+	fmt.Printf("🔍 %s\n", color.CyanString("Checking for updates for %s...", repoName))
 
-    defer func() { recover() }()
+	defer func() { recover() }()
 
-    payload, err := json.Marshal(map[string]string{"repo": repoName})
-    if err != nil {
-        return nil, false
-    }
+	payload, err := json.Marshal(map[string]string{"repo": repoName})
+	if err != nil {
+		return nil, false
+	}
 
-    client := &http.Client{Timeout: 10 * time.Second} // Increased timeout for Gemini processing
-    url := endpoints.Endpoints.CheckRepoUpdates.Get()
+	client := &http.Client{Timeout: 10 * time.Second} // Increased timeout for Gemini processing
+	url := endpoints.Endpoints.CheckRepoUpdates.Get()
 
-    resp, err := client.Post(url, "application/json", bytes.NewBuffer(payload))
-    if err != nil {
-        // log.Printf("⚠️ Update request failed: %v", err)
-        return nil, false
-    }
-    defer resp.Body.Close()
+	resp, err := client.Post(url, "application/json", bytes.NewBuffer(payload))
+	if err != nil {
+		// log.Printf("⚠️ Update request failed: %v", err)
+		return nil, false
+	}
+	defer resp.Body.Close()
 
-    if resp.StatusCode == http.StatusOK {
-        var result struct {
-            HasUpdate bool                    `json:"has_update"`
-            Data      types.RepoDocumentFull  `json:"data"`
-        }
+	if resp.StatusCode == http.StatusOK {
+		var result struct {
+			HasUpdate bool                   `json:"has_update"`
+			Data      types.RepoDocumentFull `json:"data"`
+		}
 
-        if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-            // log.Printf("⚠️ Failed to decode update response: %v", err)
-            return nil, false
-        }
+		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+			// log.Printf("⚠️ Failed to decode update response: %v", err)
+			return nil, false
+		}
 
-        if result.HasUpdate {
+		if result.HasUpdate {
 			fmt.Printf("%s\n", color.CyanString("✨ %s: New version found and refined.", repoName))
-			
+
 			formattedBytes, err := json.MarshalIndent(result.Data, "", "    ")
 			formattedResult := string(formattedBytes)
-		
+
 			if err != nil {
 				// Fallback to a basic string representation if marshaling fails
 				formattedResult = fmt.Sprintf("%+v", result.Data)
 			}
-			
-			tracker.TrackInstallationJsonGenerated(repoName,formattedResult,"github_sync")
-			return &result.Data, true
-        } else {
-			fmt.Printf("%s\n", color.CyanString("%s: Already up to date.", repoName))
-        }
-    }
 
-    return nil, false
+			tracker.TrackInstallationJsonGenerated(repoName, formattedResult, "github_sync")
+			return &result.Data, true
+		} else {
+			fmt.Printf("%s\n", color.CyanString("%s: Already up to date.", repoName))
+		}
+	}
+
+	return nil, false
 }
+
 // Core flow after a repo is selected
 func runInstallFlow(repo *types.RepoDocumentFull) {
-	
+
 	// Auto-Update Repo ---------------
 
 	//if updatedRepo, hasUpdate := checkForRepoUpdates(repo.Name); hasUpdate {
-    //    fmt.Printf("✨ %s\n", color.GreenString("Updated installation steps detected. Proceeding with the latest version."))
-    //    updatedRepo.Name = repo.Name 
+	//    fmt.Printf("✨ %s\n", color.GreenString("Updated installation steps detected. Proceeding with the latest version."))
+	//    updatedRepo.Name = repo.Name
 	//	repo = updatedRepo
-    //}
-	
+	//}
+
 	// ---------------------------------
 
 	attemptedMethods := make([]types.InstallMethod, 0)
@@ -238,7 +233,6 @@ func runInstallFlow(repo *types.RepoDocumentFull) {
 		doneTracking <- true
 		utils.DebugLog("[SIGNAL DEBUG] Sent to doneTracking channel at %s\n", time.Now().Format("15:04:05.000"))
 
-
 	}()
 	defer signal.Stop(sigChan)
 	// --- SIGNAL HANDLING END ---
@@ -256,153 +250,160 @@ func runInstallFlow(repo *types.RepoDocumentFull) {
 	remainingMethods := append([]types.InstallMethod(nil), repo.InstallationMethods...)
 
 	// TRACKER: Keep track of methods generated by AI in this session
-    var aiGeneratedMethods []types.InstallMethod
+	var aiGeneratedMethods []types.InstallMethod
 
 	hasAttemptedAutoGeneration := false
 
 	// Helper to check if we have any compatible methods left
-    hasCompatible := func(methods []types.InstallMethod) bool {
-        sysFamily := utils.GetLinuxFamily(false)
-        if sysFamily == "" {
-            sysFamily = OS 
-        }
-        for _, m := range methods {
-            combinedCmds := ""
-            for _, instr := range m.Instructions {
-                combinedCmds += " " + strings.ToLower(instr.Command)
-            }
+	hasCompatible := func(methods []types.InstallMethod) bool {
+		sysFamily := utils.GetLinuxFamily(false)
+		if sysFamily == "" {
+			sysFamily = OS
+		}
+		for _, m := range methods {
+			combinedCmds := ""
+			for _, instr := range m.Instructions {
+				combinedCmds += " " + strings.ToLower(instr.Command)
+			}
 
-            // Determine method's family
-            methodFam := ""
-            if debianRegex.MatchString(combinedCmds) { methodFam = "debian" }
-            if rpmRegex.MatchString(combinedCmds)    { methodFam = "rpm" }
-            if archRegex.MatchString(combinedCmds)   { methodFam = "arch" }
-            if windowsRegex.MatchString(combinedCmds){ methodFam = "windows" }
-            
-            // Handle the Unix-bridge (Brew)
-            if unixToolRegex.MatchString(combinedCmds) {
-                if runtime.GOOS != "windows" {
-                    methodFam = sysFamily // Force a match for Mac/Linux
-                } else {
-                    methodFam = "unix-tool"
-                }
-            }
+			// Determine method's family
+			methodFam := ""
+			if debianRegex.MatchString(combinedCmds) {
+				methodFam = "debian"
+			}
+			if rpmRegex.MatchString(combinedCmds) {
+				methodFam = "rpm"
+			}
+			if archRegex.MatchString(combinedCmds) {
+				methodFam = "arch"
+			}
+			if windowsRegex.MatchString(combinedCmds) {
+				methodFam = "windows"
+			}
 
-            // 1. Block Windows tools on Mac/Linux
-            if runtime.GOOS != "windows" && methodFam == "windows" {
-                continue
-            }
-            // 2. Block Unix tools on Windows
-            if runtime.GOOS == "windows" && methodFam == "unix-tool" {
-                continue
-            }
+			// Handle the Unix-bridge (Brew)
+			if unixToolRegex.MatchString(combinedCmds) {
+				if runtime.GOOS != "windows" {
+					methodFam = sysFamily // Force a match for Mac/Linux
+				} else {
+					methodFam = "unix-tool"
+				}
+			}
 
-            // 3. Final compatibility check
-            if methodFam == "" || methodFam == sysFamily {
-                return true
-            }
-        }
-        return false
-    }
-    for {
+			// 1. Block Windows tools on Mac/Linux
+			if runtime.GOOS != "windows" && methodFam == "windows" {
+				continue
+			}
+			// 2. Block Unix tools on Windows
+			if runtime.GOOS == "windows" && methodFam == "unix-tool" {
+				continue
+			}
+
+			// 3. Final compatibility check
+			if methodFam == "" || methodFam == sysFamily {
+				return true
+			}
+		}
+		return false
+	}
+	for {
 		isBetterMethod := false // Reset for this iteration
-        if len(remainingMethods) == 0 || !hasCompatible(remainingMethods) {
-            // Only auto-trigger if we haven't tried generating for this specific "all incompatible" state yet
-            if !hasAttemptedAutoGeneration {
-                fmt.Printf("\n🔍 %s\n", color.CyanString("No compatible methods found for your system. Searching for alternatives..."))
+		if len(remainingMethods) == 0 || !hasCompatible(remainingMethods) {
+			// Only auto-trigger if we haven't tried generating for this specific "all incompatible" state yet
+			if !hasAttemptedAutoGeneration {
+				fmt.Printf("\n🔍 %s\n", color.CyanString("No compatible methods found for your system. Searching for alternatives..."))
 				newMethods, err := live_generation.ProcessGeneratedRepoMethod(repo.Name, "github", utils.GetSupplementedOS())
-                hasAttemptedAutoGeneration = true // Mark that we've tried
+				hasAttemptedAutoGeneration = true // Mark that we've tried
 
-                if err == nil && len(newMethods) > 0 {
-                    aiGeneratedMethods = append(aiGeneratedMethods, newMethods...)
-                    fmt.Printf("✨ %s\n", color.GreenString("Found a potentially better method: %s", newMethods[0].Title))
-                    remainingMethods = append(newMethods, remainingMethods...)
-                    // Loop continues, now hasCompatible will be true, showing the new method to the user
-                    continue 
-                }
-                // If AI fails, the loop continues below to show the selection list (which will now show the Report option)
-            }
+				if err == nil && len(newMethods) > 0 {
+					aiGeneratedMethods = append(aiGeneratedMethods, newMethods...)
+					fmt.Printf("✨ %s\n", color.GreenString("Found a potentially better method: %s", newMethods[0].Title))
+					remainingMethods = append(newMethods, remainingMethods...)
+					// Loop continues, now hasCompatible will be true, showing the new method to the user
+					continue
+				}
+				// If AI fails, the loop continues below to show the selection list (which will now show the Report option)
+			}
 
-            // If we are here, it means we either just failed AI generation 
-            // OR the AI-generated method was tried and it failed too.
-            if len(remainingMethods) == 0 {
-                fmt.Println("\n" + color.YellowString("⚠️  All installation methods failed and no new methods found."))
-                handleInstallationExhausted(repo, attemptedMethods)
-                return
-            }
-        }
+			// If we are here, it means we either just failed AI generation
+			// OR the AI-generated method was tried and it failed too.
+			if len(remainingMethods) == 0 {
+				fmt.Println("\n" + color.YellowString("⚠️  All installation methods failed and no new methods found."))
+				handleInstallationExhausted(repo, attemptedMethods)
+				return
+			}
+		}
 
-        method, nav := selectInstallMethodFromList(remainingMethods, len(attemptedMethods))
-        if nav == NavigationActionExit {
-            if len(attemptedMethods) > 0 && utils.GlobalConfig.ReportBugs {
-                fmt.Println("\n" + color.YellowString("\nWe noticed that your previous installation attempt did not complete successfully."))
-                handleInstallationExhausted(repo, attemptedMethods)
-            } else {
-                fmt.Println("Installation cancelled. You can run it again anytime.")
-            }
-            return
-        }
+		method, nav := selectInstallMethodFromList(remainingMethods, len(attemptedMethods))
+		if nav == NavigationActionExit {
+			if len(attemptedMethods) > 0 && utils.GlobalConfig.ReportBugs {
+				fmt.Println("\n" + color.YellowString("\nWe noticed that your previous installation attempt did not complete successfully."))
+				handleInstallationExhausted(repo, attemptedMethods)
+			} else {
+				fmt.Println("Installation cancelled. You can run it again anytime.")
+			}
+			return
+		}
 		// Check if the selected method is one we just got from AI
-        for _, aiM := range aiGeneratedMethods {
-            if aiM.Title == method.Title {
-                isBetterMethod = true
-                break
-            }
-        }
-        activeMethod = method.Title // Tracking the last active method
-        activeCommands = strings.Join(utils.GetCommands(method.Instructions), " && ")
+		for _, aiM := range aiGeneratedMethods {
+			if aiM.Title == method.Title {
+				isBetterMethod = true
+				break
+			}
+		}
+		activeMethod = method.Title // Tracking the last active method
+		activeCommands = strings.Join(utils.GetCommands(method.Instructions), " && ")
 
-        if method.Title == "REPORT_FAILURE" {
-            handleInstallationExhausted(repo, attemptedMethods)
-            continue // Return to menu after reporting
-        }
+		if method.Title == "REPORT_FAILURE" {
+			handleInstallationExhausted(repo, attemptedMethods)
+			continue // Return to menu after reporting
+		}
 
+		if nav == NavigationActionBack {
+			fmt.Println("Returning to repository selection...")
+			return
+		}
 
-        if nav == NavigationActionBack {
-            fmt.Println("Returning to repository selection...")
-            return
-        }
+		// Execute the method and get the navigation result
+		navResult, err := runInstallationWithRetry(repo, method)
 
-        // Execute the method and get the navigation result
-        navResult, err := runInstallationWithRetry(repo, method)
-
-        if navResult == NavigationActionBack {
-            continue
-        }
+		if navResult == NavigationActionBack {
+			continue
+		}
 
 		if navResult == NavigationActionCancel {
-            // If they had previous errors, show the report prompt
-            if len(attemptedMethods) > 0 && utils.GlobalConfig.ReportBugs {
-                fmt.Println("\n" + color.YellowString("We noticed that your previous installation attempt did not complete successfully."))
-                handleInstallationExhausted(repo, attemptedMethods)
-            }
-            return 
-        }
+			// If they had previous errors, show the report prompt
+			if len(attemptedMethods) > 0 && utils.GlobalConfig.ReportBugs {
+				fmt.Println("\n" + color.YellowString("We noticed that your previous installation attempt did not complete successfully."))
+				handleInstallationExhausted(repo, attemptedMethods)
+			}
+			return
+		}
 
-        if err == nil {
+		if err == nil {
 			if isBetterMethod {
-                callUpdateMethodsAPI(repo.Name, []types.InstallMethod{method})
-            }
-            displayPostInstallation(repo)
-            fmt.Println("\n" + bold("✅ Installation complete."))
-            return
-        }
+				callUpdateMethodsAPI(repo.Name, []types.InstallMethod{method})
+			}
+			displayPostInstallation(repo)
+			fmt.Println("\n" + bold("✅ Installation complete."))
+			return
+		}
 
-        // REAL FAILURE: Remove from the list so the loop moves toward exhausting remainingMethods
-        attemptedMethods = append(attemptedMethods, method)
-        for i, m := range remainingMethods {
-            if m.Title == method.Title {
-                remainingMethods = append(remainingMethods[:i], remainingMethods[i+1:]...)
-                break
-            }
-        }
+		// REAL FAILURE: Remove from the list so the loop moves toward exhausting remainingMethods
+		attemptedMethods = append(attemptedMethods, method)
+		for i, m := range remainingMethods {
+			if m.Title == method.Title {
+				remainingMethods = append(remainingMethods[:i], remainingMethods[i+1:]...)
+				break
+			}
+		}
 
-        // If we just exhausted the list, the next iteration of the loop 
-        // will trigger the "Searching for better methods" block above.
-        if len(remainingMethods) > 0 {
-            fmt.Println("\n⚠️ Installation failed. Please try choosing another method.\n")
-        }
-    }
+		// If we just exhausted the list, the next iteration of the loop
+		// will trigger the "Searching for better methods" block above.
+		if len(remainingMethods) > 0 {
+			fmt.Println("\n⚠️ Installation failed. Please try choosing another method.\n")
+		}
+	}
 }
 
 func runInstallationWithRetry(repo *types.RepoDocumentFull, method types.InstallMethod) (NavigationAction, error) {
@@ -416,8 +417,8 @@ func runInstallationWithRetry(repo *types.RepoDocumentFull, method types.Install
 		return NavigationActionBack, nil // User wants to go back to method list
 	}
 	if nav == NavigationActionCancel {
-        return NavigationActionCancel, nil // Pass the explicit cancel up with NO error
-    }
+		return NavigationActionCancel, nil // Pass the explicit cancel up with NO error
+	}
 
 	return NavigationActionExit, fmt.Errorf("installation failed")
 }
@@ -432,7 +433,7 @@ func selectInstallMethodFromList(methods []types.InstallMethod, attemptedCount i
 	indent := "    "
 	sysFamily := utils.GetLinuxFamily(false)
 	if sysFamily == "" {
-		sysFamily = OS 
+		sysFamily = OS
 	}
 
 	detailedName := utils.GetLinuxFamily(true)
@@ -470,28 +471,28 @@ func selectInstallMethodFromList(methods []types.InstallMethod, attemptedCount i
 			familyTag = " (for Arch)"
 			currentMethodFamily = "arch"
 		} else if windowsRegex.MatchString(combinedCmds) {
-            familyTag = " (for Windows)"
-            currentMethodFamily = "windows"
-        } else if unixToolRegex.MatchString(combinedCmds) {
-            familyTag = " (for macOS/Linux)"
-            // If we are on Mac or Linux, we treat this as a native match 
-            // by aligning it with the current OS/sysFamily.
-            if runtime.GOOS != "windows" {
-                currentMethodFamily = sysFamily 
-            } else {
-                currentMethodFamily = "unix-tool"
-            }
-        }
+			familyTag = " (for Windows)"
+			currentMethodFamily = "windows"
+		} else if unixToolRegex.MatchString(combinedCmds) {
+			familyTag = " (for macOS/Linux)"
+			// If we are on Mac or Linux, we treat this as a native match
+			// by aligning it with the current OS/sysFamily.
+			if runtime.GOOS != "windows" {
+				currentMethodFamily = sysFamily
+			} else {
+				currentMethodFamily = "unix-tool"
+			}
+		}
 
 		isMatch := sysFamily == "" || currentMethodFamily == "" || currentMethodFamily == sysFamily
 		if runtime.GOOS != "windows" && currentMethodFamily == "windows" {
-            isMatch = false
-        }
+			isMatch = false
+		}
 
 		if runtime.GOOS == "windows" && currentMethodFamily == "unix-tool" {
 			isMatch = false
 		}
-		
+
 		if isMatch {
 			allIncompatible = false
 		}
@@ -801,9 +802,9 @@ func runScriptWithStatus(repo *types.RepoDocumentFull, method types.InstallMetho
 			(strings.Contains(l, "usage:") && strings.Contains(l, "error:"))
 	}
 
-	execDir := "" //  PERSISTENT
-	pipSwapped := false //  Track if we've already tried the pip/pip3 swap
-	brewSwapped := false //  Track if we've already tried the MacPorts swap
+	execDir := ""          //  PERSISTENT
+	pipSwapped := false    //  Track if we've already tried the pip/pip3 swap
+	brewSwapped := false   //  Track if we've already tried the MacPorts swap
 	var updatedPath string //  Define this to persist the new PATH across retries
 	buildAndRun := func(useSudo bool) (string, error) {
 		var script strings.Builder
@@ -939,13 +940,13 @@ func runScriptWithStatus(repo *types.RepoDocumentFull, method types.InstallMetho
 			if !silent {
 				fmt.Println(indent + color.New(color.FgGreen).Sprint("✓ All commands completed"))
 			}
-		
+
 			if skippedServerCmd != "" {
 				fmt.Println(color.New(color.FgYellow).Sprint("ℹ Server start command skipped."))
 				fmt.Println(indent + "Run this to start the server:")
 				fmt.Println(indent + color.New(color.Bold).Sprint(skippedServerCmd))
 			}
-		
+
 			return nil
 		}
 
@@ -962,7 +963,7 @@ func runScriptWithStatus(repo *types.RepoDocumentFull, method types.InstallMetho
 			if hasBrew {
 				var useMacPorts bool
 				prompt := &survey.Confirm{
-					Message: "Homebrew command failed. Would you like to try again using MacPorts (sudo port)?",					
+					Message: "Homebrew command failed. Would you like to try again using MacPorts (sudo port)?",
 					Default: true,
 				}
 
@@ -1083,12 +1084,12 @@ func runScriptWithStatus(repo *types.RepoDocumentFull, method types.InstallMetho
 			if runtime.GOOS == "windows" {
 				msg = "Permission denied. Retry as Administrator?"
 			}
-			
+
 			prompt := &survey.Confirm{
 				Message: msg,
 				Default: true,
 			}
-            
+
 			if survey.AskOne(prompt, &retry) == nil && retry {
 				fmt.Println(indent + color.New(color.FgYellow).Sprint("🔐 Requesting elevation..."))
 				output, err = buildAndRun(true) // This now triggers the RunAs logic above
@@ -1101,29 +1102,29 @@ func runScriptWithStatus(repo *types.RepoDocumentFull, method types.InstallMetho
 		}
 
 		// --- PIP / PIP3 ALTERNATIVE HANDLER ---
-        // Check if the error is specifically about 'pip' or 'pip3' missing
-        isPipMissing := regexp.MustCompile(`(?i)(pip\d?[:\s]+(?:command\s+)?not\s+found|pip\d?.*is not recognized)`).MatchString(output)
-        
-        if isPipMissing && !pipSwapped {
-            changed := false
-            for i, instr := range commands {
-                original := instr.Command
-                // Toggle between pip and pip3
-                if strings.Contains(original, "pip ") {
-                    commands[i].Command = strings.Replace(original, "pip ", "pip3 ", 1)
-                    changed = true
-                } else if strings.Contains(original, "pip3 ") {
-                    commands[i].Command = strings.Replace(original, "pip3 ", "pip ", 1)
-                    changed = true
-                }
-            }
+		// Check if the error is specifically about 'pip' or 'pip3' missing
+		isPipMissing := regexp.MustCompile(`(?i)(pip\d?[:\s]+(?:command\s+)?not\s+found|pip\d?.*is not recognized)`).MatchString(output)
 
-            if changed {
+		if isPipMissing && !pipSwapped {
+			changed := false
+			for i, instr := range commands {
+				original := instr.Command
+				// Toggle between pip and pip3
+				if strings.Contains(original, "pip ") {
+					commands[i].Command = strings.Replace(original, "pip ", "pip3 ", 1)
+					changed = true
+				} else if strings.Contains(original, "pip3 ") {
+					commands[i].Command = strings.Replace(original, "pip3 ", "pip ", 1)
+					changed = true
+				}
+			}
+
+			if changed {
 				pipSwapped = true
-                fmt.Println(indent + color.New(color.FgYellow).Sprint("ℹ Pip not found. Trying alternative (pip/pip3)..."))
-                continue // 🔁 Retry loop with swapped pip command
-            }
-        }
+				fmt.Println(indent + color.New(color.FgYellow).Sprint("ℹ Pip not found. Trying alternative (pip/pip3)..."))
+				continue // 🔁 Retry loop with swapped pip command
+			}
+		}
 
 		// 1. Check for missing git/npm/etc
 		shouldRetry, newPath, depErr := prerequisites.HandleMissingDependencies(output)
@@ -1131,11 +1132,11 @@ func runScriptWithStatus(repo *types.RepoDocumentFull, method types.InstallMetho
 			return depErr
 		}
 		if shouldRetry {
-            if newPath != "" {
-                updatedPath = newPath // ✅ Store it for the next buildAndRun
-            }
-            continue 
-        }
+			if newPath != "" {
+				updatedPath = newPath // ✅ Store it for the next buildAndRun
+			}
+			continue
+		}
 
 		if isInterrupted == false {
 			fmt.Println(indent + color.New(color.FgRed).Sprint("✗ Command failed"))
@@ -1171,22 +1172,19 @@ func InstallLocalFile(filePath string) {
 	runInstallFlow(&repo)
 }
 
-
-
 func callUpdateMethodsAPI(repoName string, newMethods []types.InstallMethod) {
-    // Define the endpoint URL - adjust based on your actual Endpoints config
-    url := endpoints.Endpoints.UpdateEntry.Get() 
-    
-    payload := map[string]interface{}{
-        "repo":        repoName,
-        "new_methods": newMethods,
-    }
-    
-    body, _ := json.Marshal(payload)
-    // Fire and forget or simple log on error
-    resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
-    if err == nil {
-        defer resp.Body.Close()
-    }
-}
+	// Define the endpoint URL - adjust based on your actual Endpoints config
+	url := endpoints.Endpoints.UpdateEntry.Get()
 
+	payload := map[string]interface{}{
+		"repo":        repoName,
+		"new_methods": newMethods,
+	}
+
+	body, _ := json.Marshal(payload)
+	// Fire and forget or simple log on error
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
+	if err == nil {
+		defer resp.Body.Close()
+	}
+}

@@ -1,8 +1,6 @@
 package endpoints
 
-
 var IsLocalDev = false
-
 
 // ServiceConfig holds the toggle and the two possible URLs
 type ServiceConfig struct {
@@ -13,22 +11,22 @@ type ServiceConfig struct {
 
 // Get returns the active URL based on the UseLocal flag
 func (s ServiceConfig) Get() string {
-    // If master is on OR individual is on, return Local
-    if IsLocalDev || s.UseLocal {
-        return s.Local
-    }
-    return s.Prod
+	// If master is on OR individual is on, return Local
+	if IsLocalDev || s.UseLocal {
+		return s.Local
+	}
+	return s.Prod
 }
 
 // Endpoints acts as your central dictionary for API URLs
 var Endpoints = struct {
-	AddEntry     ServiceConfig
-	GenerateRepo ServiceConfig
+	AddEntry           ServiceConfig
+	GenerateRepo       ServiceConfig
 	GenerateRepoMethod ServiceConfig
-	AutoIndex    ServiceConfig
-	Featured     ServiceConfig
-	UpdateEntry  ServiceConfig
-	CheckRepoUpdates ServiceConfig
+	AutoIndex          ServiceConfig
+	Featured           ServiceConfig
+	UpdateEntry        ServiceConfig
+	CheckRepoUpdates   ServiceConfig
 }{
 	AddEntry: ServiceConfig{
 		UseLocal: false,
@@ -51,18 +49,18 @@ var Endpoints = struct {
 		Prod:     "https://hexmos.com/freedevtools/api/installerpedia/auto_index",
 	},
 	Featured: ServiceConfig{
-        UseLocal: false,
-        Local:    "http://localhost:4321/freedevtools/api/installerpedia/featured",
-        Prod:     "https://hexmos.com/freedevtools/api/installerpedia/featured",
-    },
+		UseLocal: false,
+		Local:    "http://localhost:4321/freedevtools/api/installerpedia/featured",
+		Prod:     "https://hexmos.com/freedevtools/api/installerpedia/featured",
+	},
 	UpdateEntry: ServiceConfig{
 		UseLocal: false,
 		Local:    "http://localhost:4321/freedevtools/api/installerpedia/update-entry",
-        Prod:     "https://hexmos.com/freedevtools/api/installerpedia/update-entry",
+		Prod:     "https://hexmos.com/freedevtools/api/installerpedia/update-entry",
 	},
 	CheckRepoUpdates: ServiceConfig{
 		UseLocal: false,
 		Local:    "http://localhost:4321/freedevtools/api/installerpedia/check_ipm_repo_updates",
-        Prod:     "https://hexmos.com/freedevtools/api/installerpedia/check_ipm_repo_updates",
+		Prod:     "https://hexmos.com/freedevtools/api/installerpedia/check_ipm_repo_updates",
 	},
 }

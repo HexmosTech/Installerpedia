@@ -12,7 +12,6 @@ import (
 
 const MEILI_SEARCH_API_KEY = "1038cd79387c4c2923df4e90e8f7ac3e760ab842fed759fb9f68ae8f7a95d0f8"
 
-
 // Global client (lazy-init; uses Connect to verify server)
 var meiliClient meilisearch.ServiceManager
 
@@ -56,10 +55,9 @@ func FuzzySearchMeili(query string) ([]types.RepoDocumentFull, error) {
 	}
 
 	req := &meilisearch.SearchRequest{
-		Limit:           30,
-		Filter:          "category = installerpedia",
+		Limit:            30,
+		Filter:           "category = installerpedia",
 		MatchingStrategy: "all",
-		
 	}
 
 	searchRes, err := index.Search(query, req)
@@ -88,7 +86,6 @@ func FuzzySearchMeili(query string) ([]types.RepoDocumentFull, error) {
 
 	return results, nil
 }
-
 
 // internal/search/meili.go
 

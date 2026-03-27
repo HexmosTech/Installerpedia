@@ -32,19 +32,19 @@ func GetMachineDistinctID() string {
 	return machineDistinctID
 }
 
-
 func GetSupplementedOS() string {
-    if runtime.GOOS == "linux" {
-        if detailed := GetLinuxFamily(true); detailed != "" {
-            return fmt.Sprintf("linux (%s)", detailed)
-        }
-    } else if runtime.GOOS == "darwin" {
-        if detailed := GetMacDetailed(); detailed != "" {
-            return fmt.Sprintf("darwin (%s)", detailed)
-        }
-    }
-    return runtime.GOOS
+	if runtime.GOOS == "linux" {
+		if detailed := GetLinuxFamily(true); detailed != "" {
+			return fmt.Sprintf("linux (%s)", detailed)
+		}
+	} else if runtime.GOOS == "darwin" {
+		if detailed := GetMacDetailed(); detailed != "" {
+			return fmt.Sprintf("darwin (%s)", detailed)
+		}
+	}
+	return runtime.GOOS
 }
+
 // 2. Helper to detect the current system's family
 func GetLinuxFamily(detailed bool) string {
 	if runtime.GOOS != "linux" {
@@ -60,38 +60,38 @@ func GetLinuxFamily(detailed bool) string {
 	lowerContent := strings.ToLower(content)
 	family := ""
 	// 1. Debian Family (DEB)
-	if strings.Contains(lowerContent, "debian") || 
-	strings.Contains(lowerContent, "ubuntu") || 
-	strings.Contains(lowerContent, "kali") || 
-	strings.Contains(lowerContent, "pop") ||
-	strings.Contains(lowerContent, "deepin") ||
-	strings.Contains(lowerContent, "mint") ||     
-	strings.Contains(lowerContent, "zorin") ||   
-	strings.Contains(lowerContent, "elementary") || 
-	strings.Contains(lowerContent, "pureos") ||  
-	strings.Contains(lowerContent, "raspbian") || 
-	strings.Contains(lowerContent, "uos") {
-	family = "debian"
+	if strings.Contains(lowerContent, "debian") ||
+		strings.Contains(lowerContent, "ubuntu") ||
+		strings.Contains(lowerContent, "kali") ||
+		strings.Contains(lowerContent, "pop") ||
+		strings.Contains(lowerContent, "deepin") ||
+		strings.Contains(lowerContent, "mint") ||
+		strings.Contains(lowerContent, "zorin") ||
+		strings.Contains(lowerContent, "elementary") ||
+		strings.Contains(lowerContent, "pureos") ||
+		strings.Contains(lowerContent, "raspbian") ||
+		strings.Contains(lowerContent, "uos") {
+		family = "debian"
 
-	// 2. Red Hat/SUSE Family (RPM)
-	} else if strings.Contains(lowerContent, "fedora") || 
-		strings.Contains(lowerContent, "rhel") || 
-		strings.Contains(lowerContent, "centos") || 
-		strings.Contains(lowerContent, "suse") || 
+		// 2. Red Hat/SUSE Family (RPM)
+	} else if strings.Contains(lowerContent, "fedora") ||
+		strings.Contains(lowerContent, "rhel") ||
+		strings.Contains(lowerContent, "centos") ||
+		strings.Contains(lowerContent, "suse") ||
 		strings.Contains(lowerContent, "sles") ||
-		strings.Contains(lowerContent, "amzn") || 
-		strings.Contains(lowerContent, "rocky") || 
-		strings.Contains(lowerContent, "alma") || 
+		strings.Contains(lowerContent, "amzn") ||
+		strings.Contains(lowerContent, "rocky") ||
+		strings.Contains(lowerContent, "alma") ||
 		strings.Contains(lowerContent, "oracle") ||
-        strings.Contains(lowerContent, "nobara") || 
-        strings.Contains(lowerContent, "mageia") { 
-	family = "rpm"
+		strings.Contains(lowerContent, "nobara") ||
+		strings.Contains(lowerContent, "mageia") {
+		family = "rpm"
 
-	// 3. Arch Family (Pacman)
-	} else if strings.Contains(lowerContent, "arch") || 
+		// 3. Arch Family (Pacman)
+	} else if strings.Contains(lowerContent, "arch") ||
 		strings.Contains(lowerContent, "manjaro") ||
 		strings.Contains(lowerContent, "endeavour") {
-	family = "arch"
+		family = "arch"
 	}
 	if detailed {
 		prettyName := ""
@@ -117,49 +117,57 @@ func GetLinuxFamily(detailed bool) string {
 	return family
 }
 
-
 func GetMacDetailed() string {
-    // 1. Read the system plist
-    data, err := os.ReadFile("/System/Library/CoreServices/SystemVersion.plist")
-    if err != nil {
-        return "macOS"
-    }
-    content := string(data)
+	// 1. Read the system plist
+	data, err := os.ReadFile("/System/Library/CoreServices/SystemVersion.plist")
+	if err != nil {
+		return "macOS"
+	}
+	content := string(data)
 
-    // 2. Extract Version (e.g., 14.4.1)
-    version := "Unknown"
-    if strings.Contains(content, "ProductUserVisibleVersion") {
-        parts := strings.Split(content, "ProductUserVisibleVersion")
-        if len(parts) > 1 {
-            subParts := strings.Split(parts[1], "<string>")
-            if len(subParts) > 1 {
-                version = strings.Split(subParts[1], "</string>")[0]
-            }
-        }
-    }
+	// 2. Extract Version (e.g., 14.4.1)
+	version := "Unknown"
+	if strings.Contains(content, "ProductUserVisibleVersion") {
+		parts := strings.Split(content, "ProductUserVisibleVersion")
+		if len(parts) > 1 {
+			subParts := strings.Split(parts[1], "<string>")
+			if len(subParts) > 1 {
+				version = strings.Split(subParts[1], "</string>")[0]
+			}
+		}
+	}
 
-    // 3. Map Version to Marketing Name (The "Family" equivalent)
-    // macOS versions 11+ use the first number for the major release
-    major := strings.Split(version, ".")[0]
-    name := "macOS"
-    
-    switch major {
-    case "15": name = "Sequoia"
-    case "14": name = "Sonoma"
-    case "13": name = "Ventura"
-    case "12": name = "Monterey"
-    case "11": name = "Big Sur"
-    case "10":
-        // For 10.x, we look at the second number
-        if segments := strings.Split(version, "."); len(segments) > 1 {
-            switch segments[1] {
-            case "15": name = "Catalina"
-            case "14": name = "Mojave"
-            case "13": name = "High Sierra"
-            default: name = "Mac OS X"
-            }
-        }
-    }
+	// 3. Map Version to Marketing Name (The "Family" equivalent)
+	// macOS versions 11+ use the first number for the major release
+	major := strings.Split(version, ".")[0]
+	name := "macOS"
 
-    return fmt.Sprintf("%s %s", name, version)
+	switch major {
+	case "15":
+		name = "Sequoia"
+	case "14":
+		name = "Sonoma"
+	case "13":
+		name = "Ventura"
+	case "12":
+		name = "Monterey"
+	case "11":
+		name = "Big Sur"
+	case "10":
+		// For 10.x, we look at the second number
+		if segments := strings.Split(version, "."); len(segments) > 1 {
+			switch segments[1] {
+			case "15":
+				name = "Catalina"
+			case "14":
+				name = "Mojave"
+			case "13":
+				name = "High Sierra"
+			default:
+				name = "Mac OS X"
+			}
+		}
+	}
+
+	return fmt.Sprintf("%s %s", name, version)
 }

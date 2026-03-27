@@ -16,33 +16,33 @@ import (
 )
 
 func handleInstallationExhausted(repo *types.RepoDocumentFull, attempted []types.InstallMethod) {
-    bold := color.New(color.Bold).SprintFunc()
-    green := color.New(color.FgGreen, color.Bold).SprintFunc()
-    fmt.Println("Help us fix " + bold(repo.Name) + " for you and the community.")
+	bold := color.New(color.Bold).SprintFunc()
+	green := color.New(color.FgGreen, color.Bold).SprintFunc()
+	fmt.Println("Help us fix " + bold(repo.Name) + " for you and the community.")
 
-    var raiseIssue bool
-    prompt := &survey.Confirm{
-        // Highlight that it is pre-filled and only requires one final click.
-        Message: "Open GitHub to submit a pre-filled report? (Just click " + green("'Create'") + " in the browser)",
-        Default: true,
-    }
+	var raiseIssue bool
+	prompt := &survey.Confirm{
+		// Highlight that it is pre-filled and only requires one final click.
+		Message: "Open GitHub to submit a pre-filled report? (Just click " + green("'Create'") + " in the browser)",
+		Default: true,
+	}
 
-    if err := survey.AskOne(prompt, &raiseIssue); err != nil || !raiseIssue {
-        fmt.Println("Understood. You can always report this later if you change your mind.")
-        return
-    }
+	if err := survey.AskOne(prompt, &raiseIssue); err != nil || !raiseIssue {
+		fmt.Println("Understood. You can always report this later if you change your mind.")
+		return
+	}
 
-    // This ensures they know EXACTLY what to do the moment the browser pops up.
-    fmt.Println("\n" + green("🚀 Opening GitHub..."))
-    fmt.Println("Just scroll down and press the green " + bold("Create") + " button.")
+	// This ensures they know EXACTLY what to do the moment the browser pops up.
+	fmt.Println("\n" + green("🚀 Opening GitHub..."))
+	fmt.Println("Just scroll down and press the green " + bold("Create") + " button.")
 
-    openGitHubIssue(repo, attempted)
+	openGitHubIssue(repo, attempted)
 }
 
 func buildIssueBody(repo *types.RepoDocumentFull, attempted []types.InstallMethod) string {
 	var b strings.Builder
 	detailedName := utils.GetLinuxFamily(true)
-	
+
 	// Determine if this is a "failed attempt" or a "no compatible methods" report
 	isIncompatibilityReport := len(attempted) == 0
 	statusHeader := "All attempted installation methods failed."
@@ -98,7 +98,7 @@ func buildIssueBody(repo *types.RepoDocumentFull, attempted []types.InstallMetho
 
 func openGitHubIssue(repo *types.RepoDocumentFull, attempted []types.InstallMethod) {
 	detailedName := utils.GetLinuxFamily(true)
-	
+
 	// Create a more descriptive title
 	title := fmt.Sprintf("Installation failed for %s", repo.Name)
 	if len(attempted) == 0 {
@@ -138,6 +138,7 @@ func openGitHubIssue(repo *types.RepoDocumentFull, attempted []types.InstallMeth
 		fmt.Println("Issue page opened in your browser.")
 	}
 }
+
 // Helper function to detect WSL environment
 func isWSL() bool {
 	releaseData, err := exec.Command("uname", "-r").Output()

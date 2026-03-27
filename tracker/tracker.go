@@ -33,8 +33,8 @@ var EnabledTrackers = map[string]bool{
 	"ipm_repo_search_event":           true,
 	"ipm_update_success":              true,
 	"ipm_installation_json_generated": true,
-  	"ipm_auto_index": true,
-	"ipm_install_repo_cancelled":true,
+	"ipm_auto_index":                  true,
+	"ipm_install_repo_cancelled":      true,
 }
 
 // Internal helper to handle the HTTP request and the global/local toggles
@@ -139,10 +139,8 @@ func TrackInstallCancelled(repoName, method, cmd, errorTrace string) {
 	utils.DebugLog("[TRACKING DEBUG] ===== trackInstallCancelled COMPLETE =====\n")
 }
 
-
 //utils.GetSupplementedOS(),
 // ARCH,
-
 
 func TrackInstallSuccess(repoName, method string, commands []types.Instruction) {
 	eventName := "ipm_install_repo_success"

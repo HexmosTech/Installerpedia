@@ -23,6 +23,7 @@ import (
 
 var IPM_ADD_API_URL = endpoints.Endpoints.AddEntry.Get()
 var IPM_GENERATE_REPO_API_URL = endpoints.Endpoints.GenerateRepo.Get()
+
 type IPMPayload struct {
 	Repo                string      `json:"repo"`
 	RepoType            string      `json:"repo_type"`
@@ -44,55 +45,55 @@ type RepologyProject struct {
 type RepologyResponse map[string][]RepologyProject
 
 func fetchRepologyRepos(query string) (RepologyResponse, error) {
-    url := fmt.Sprintf("https://repology.org/api/v1/projects/?search=%s", url.QueryEscape(query))
-    
-    // LOG: Track the outgoing request
-    utils.DebugLog("Fetching Repology data from: %s", url)
+	url := fmt.Sprintf("https://repology.org/api/v1/projects/?search=%s", url.QueryEscape(query))
 
-    client := &http.Client{Timeout: 10 * time.Second}
-    req, _ := http.NewRequest("GET", url, nil)
-    req.Header.Set("User-Agent", "Mozilla/5.0 (IPM-CLI-Tool; contact@example.com)")
+	// LOG: Track the outgoing request
+	utils.DebugLog("Fetching Repology data from: %s", url)
 
-    resp, err := client.Do(req)
-    if err != nil {
-        // CHANGED: fmt -> utils.DebugLog
-        utils.DebugLog("❌ Repology Connection Error: %v", err)
-        return nil, err
-    }
-    defer resp.Body.Close()
+	client := &http.Client{Timeout: 10 * time.Second}
+	req, _ := http.NewRequest("GET", url, nil)
+	req.Header.Set("User-Agent", "Mozilla/5.0 (IPM-CLI-Tool; contact@example.com)")
 
-    // LOG: Check status code
-    utils.DebugLog("Repology API response status: %d", resp.StatusCode)
+	resp, err := client.Do(req)
+	if err != nil {
+		// CHANGED: fmt -> utils.DebugLog
+		utils.DebugLog("❌ Repology Connection Error: %v", err)
+		return nil, err
+	}
+	defer resp.Body.Close()
 
-    if resp.StatusCode != http.StatusOK {
-        return nil, fmt.Errorf("bad status: %d", resp.StatusCode)
-    }
+	// LOG: Check status code
+	utils.DebugLog("Repology API response status: %d", resp.StatusCode)
 
-    var fullResult RepologyResponse
-    if err := json.NewDecoder(resp.Body).Decode(&fullResult); err != nil {
-        // CHANGED: fmt -> utils.DebugLog
-        utils.DebugLog("❌ Repology Decode Error: %v", err)
-        return nil, err
-    }
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("bad status: %d", resp.StatusCode)
+	}
 
-    // LOG: Total results found before limiting
-    utils.DebugLog("Repology returned %d total project(s)", len(fullResult))
+	var fullResult RepologyResponse
+	if err := json.NewDecoder(resp.Body).Decode(&fullResult); err != nil {
+		// CHANGED: fmt -> utils.DebugLog
+		utils.DebugLog("❌ Repology Decode Error: %v", err)
+		return nil, err
+	}
 
-    // --- Limit to 10 entries ---
-    limitedResult := make(RepologyResponse)
-    count := 0
-    for pkg, project := range fullResult {
-        if count >= 10 {
-            break
-        }
-        limitedResult[pkg] = project
-        count++
-    }
+	// LOG: Total results found before limiting
+	utils.DebugLog("Repology returned %d total project(s)", len(fullResult))
 
-    // LOG: Final count being returned to the TUI
-    utils.DebugLog("Returning %d limited Repology entries to selector", len(limitedResult))
+	// --- Limit to 10 entries ---
+	limitedResult := make(RepologyResponse)
+	count := 0
+	for pkg, project := range fullResult {
+		if count >= 10 {
+			break
+		}
+		limitedResult[pkg] = project
+		count++
+	}
 
-    return limitedResult, nil
+	// LOG: Final count being returned to the TUI
+	utils.DebugLog("Returning %d limited Repology entries to selector", len(limitedResult))
+
+	return limitedResult, nil
 }
 
 // Define a minimal struct for GitHub's API response
@@ -185,45 +186,44 @@ func HandleGitHubFallback(query string) *types.RepoDocumentFull {
 	}
 
 	// Processing logic with 3 retries
-    var rawJson string
-    var fetchErr error
+	var rawJson string
+	var fetchErr error
 
-    for i := 1; i <= 3; i++ {
-        rawJson, fetchErr = fetchGeneratedRepo(selectedRepo, sourceType)
-        if fetchErr != nil {
+	for i := 1; i <= 3; i++ {
+		rawJson, fetchErr = fetchGeneratedRepo(selectedRepo, sourceType)
+		if fetchErr != nil {
 			utils.DebugLog("Fetch attempt %d failed: %v", i, fetchErr)
 		} else {
 			utils.DebugLog("Fetch attempt %d succeeded. Data size: %d bytes", i, len(rawJson))
 		}
 		if fetchErr == nil {
-            break
-        }
-        fmt.Printf("⚠️ Error fetching (attempt %d/3): %v. Retrying...\n", i, fetchErr)
-        if i < 3 {
-            time.Sleep(1 * time.Second) // Brief pause before retry
-        }
-    }
+			break
+		}
+		fmt.Printf("⚠️ Error fetching (attempt %d/3): %v. Retrying...\n", i, fetchErr)
+		if i < 3 {
+			time.Sleep(1 * time.Second) // Brief pause before retry
+		}
+	}
 
-    if fetchErr != nil {
-        fmt.Printf("❌ Failed to fetch after 3 attempts. Aborting.\n")
-        return nil
-    }
+	if fetchErr != nil {
+		fmt.Printf("❌ Failed to fetch after 3 attempts. Aborting.\n")
+		return nil
+	}
 
-    cleanJson := strings.TrimSpace(strings.TrimPrefix(strings.TrimSuffix(rawJson, "```"), "```json"))
-    
-    // Fix: Always initialize the map to prevent "assignment to nil" panic
-    tempMap := make(map[string]interface{})
-    _ = json.Unmarshal([]byte(cleanJson), &tempMap) 
+	cleanJson := strings.TrimSpace(strings.TrimPrefix(strings.TrimSuffix(rawJson, "```"), "```json"))
 
-    // These assignments are now safe because tempMap is initialized
-    tempMap["name"] = selectedRepo
-    tempMap["description"] = selectedDesc
-    tempMap["stars"] = selectedStars
+	// Fix: Always initialize the map to prevent "assignment to nil" panic
+	tempMap := make(map[string]interface{})
+	_ = json.Unmarshal([]byte(cleanJson), &tempMap)
+
+	// These assignments are now safe because tempMap is initialized
+	tempMap["name"] = selectedRepo
+	tempMap["description"] = selectedDesc
+	tempMap["stars"] = selectedStars
 	utils.DebugLog("Metadata merged into JSON for: %s", selectedRepo)
 
-    mergedBytes, _ := json.MarshalIndent(tempMap, "", "    ")
-	
-	
+	mergedBytes, _ := json.MarshalIndent(tempMap, "", "    ")
+
 	var repo types.RepoDocumentFull
 	json.Unmarshal(mergedBytes, &repo)
 
