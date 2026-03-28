@@ -785,6 +785,7 @@ func runScriptWithStatus(repo *types.RepoDocumentFull, method types.InstallMetho
 	liveLogs.Reset() // Live logs variable to track in-between cancellation logs
 	// Detect server start command at the end and skip execution
 	var skippedServerCmd string
+	pythonFixed := false
 
 	if len(commands) > 0 {
 		lastCmd := strings.TrimSpace(commands[len(commands)-1].Command)
@@ -1026,13 +1027,49 @@ func runScriptWithStatus(repo *types.RepoDocumentFull, method types.InstallMetho
 		}
 		// --- PEP 668 / EXTERNALLY MANAGED ENVIRONMENT HANDLER ---
 		if utils.IsExternallyManagedError(output) {
-			var useVenv bool
-			prompt := &survey.Confirm{
-				Message: "System Python is externally managed. Use/Create an isolated virtual environment (.venv)?",
-				Default: true,
-			}
+			var choice string
+				prompt := &survey.Select{
+					Message: "System Python is externally managed. How would you like to proceed?",
+					Options: []string{"Install via pipx (Recommended for CLI tools)", "Create/Use a virtual environment (.venv)", "Cancel"},
+					Default: "Install via pipx (Recommended for CLI tools)",
+				}
 
-			if survey.AskOne(prompt, &useVenv) == nil && useVenv {
+				if survey.AskOne(prompt, &choice) != nil || choice == "Cancel" {
+					return fmt.Errorf("installation aborted by user")
+				}
+
+				// --- OPTION 1: PIPX ---
+				if choice == "Install via pipx (Recommended for CLI tools)" {
+					if !utils.CommandExists("pipx") {
+						utils.DebugLog("Installing pipx....")
+						utils.InstallPipx()
+					}
+				
+					if utils.CommandExists("pipx") {
+						for i, instr := range commands {
+							cmd := instr.Command
+							utils.DebugLog("Original cmd: %s", cmd)
+					
+							// 1. Handle the 'python -m pip' variants
+							cmd = strings.ReplaceAll(cmd, "python3 -m pip install", "pipx install")
+							cmd = strings.ReplaceAll(cmd, "python -m pip install", "pipx install")
+					
+							// 2. Handle 'pip3' and 'pip' variants
+							// We use ReplaceAll to catch every instance in the script
+							cmd = strings.ReplaceAll(cmd, "pip3 install", "pipx install")
+							cmd = strings.ReplaceAll(cmd, "pip install", "pipx install")
+					
+							utils.DebugLog("Rewritten cmd: %s", cmd)
+							commands[i].Command = cmd
+						}
+					
+						// Lock the fix and refresh the PATH so the shell can find 'pipx'
+						pythonFixed = true 
+						updatedPath = os.Getenv("PATH") 
+						continue 
+					}
+				}
+
 				venvBase := execDir
 				if venvBase == "" {
 					venvBase = "."
@@ -1069,7 +1106,7 @@ func runScriptWithStatus(repo *types.RepoDocumentFull, method types.InstallMetho
 				}
 
 				continue // 🔁 Retry loop with the updated commands
-			}
+
 		}
 
 		if isArgumentError(output) {
@@ -1105,7 +1142,8 @@ func runScriptWithStatus(repo *types.RepoDocumentFull, method types.InstallMetho
 		// Check if the error is specifically about 'pip' or 'pip3' missing
 		isPipMissing := regexp.MustCompile(`(?i)(pip\d?[:\s]+(?:command\s+)?not\s+found|pip\d?.*is not recognized)`).MatchString(output)
 
-		if isPipMissing && !pipSwapped {
+
+		if isPipMissing && !pipSwapped && !utils.IsExternallyManagedError(output) {
 			changed := false
 			for i, instr := range commands {
 				original := instr.Command
@@ -1127,6 +1165,9 @@ func runScriptWithStatus(repo *types.RepoDocumentFull, method types.InstallMetho
 		}
 
 		// 1. Check for missing git/npm/etc
+		if pythonFixed {
+			return err // Return the actual error if it failed even after fix
+		}
 		shouldRetry, newPath, depErr := prerequisites.HandleMissingDependencies(output)
 		if depErr != nil {
 			return depErr

@@ -1,5 +1,10 @@
 package types
 
+import (
+	"regexp"
+	"runtime"
+)
+
 type Instruction struct {
 	Command  string `json:"command"`
 	Meaning  string `json:"meaning,omitempty"`
@@ -30,4 +35,19 @@ type RepoDocumentFull struct {
 	Prerequisites       []Prerequisite  `json:"prerequisites,omitempty"`
 	InstallationMethods []InstallMethod `json:"installation_methods,omitempty"`
 	PostInstallation    []string        `json:"post_installation,omitempty"`
+}
+
+
+type Dependency struct {
+	Name        string
+	Regexes     map[string]*regexp.Regexp
+	Install     map[string][]string
+	PathAugment map[string][]string
+}
+
+func (d Dependency) GetRegex() *regexp.Regexp {
+	if r, ok := d.Regexes[runtime.GOOS]; ok {
+		return r
+	}
+	return d.Regexes["default"]
 }

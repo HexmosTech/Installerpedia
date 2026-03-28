@@ -3,35 +3,18 @@ package prerequisites
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"regexp"
 	"runtime"
 	"strings"
 
+	"ipm/types"
 	utils "ipm/utils"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/fatih/color"
 )
 
-type Dependency struct {
-	Name        string
-	Regexes     map[string]*regexp.Regexp
-	Install     map[string][]string
-	PathAugment map[string][]string
-}
-
-// Helper to get the correct regex for the current platform
-func (d Dependency) getRegex() *regexp.Regexp {
-	// Try to get OS-specific regex
-	if r, ok := d.Regexes[runtime.GOOS]; ok {
-		return r
-	}
-	// Fallback to a default/generic one if available
-	return d.Regexes["default"]
-}
-
-var Dependencies = []Dependency{
+var Dependencies = []types.Dependency{
 	{
 		Name: "Git",
 		Regexes: map[string]*regexp.Regexp{
@@ -92,7 +75,7 @@ var Dependencies = []Dependency{
 		Name: "Pip",
 		Regexes: map[string]*regexp.Regexp{
 			"windows": regexp.MustCompile(`(?i)\bpip3?\b.*is not recognized`),
-			"default": regexp.MustCompile(`(?i)\bpip3?\b[:\s]+(?:command\s+)?not\s+found`),
+			"default": regexp.MustCompile(`(?i)(\bpip3?\b[:\s]+(?:command\s+)?not\s+found|no module named pip)`),
 		},
 		Install: map[string][]string{
 			"darwin":  {"python3 -m ensurepip --upgrade"},
@@ -326,12 +309,12 @@ var Dependencies = []Dependency{
 func HandleMissingDependencies(output string) (bool, string, error) {
 	indent := "    "
 	for _, dep := range Dependencies {
-		reg := dep.getRegex()
+		reg := dep.GetRegex()
 		if reg == nil || !reg.MatchString(output) {
 			continue
 		}
 
-		cmds := getInstallCommands(dep)
+		cmds := utils.GetInstallCommands(dep)
 		if len(cmds) == 0 {
 			return false, "", nil
 		}
@@ -351,7 +334,7 @@ func HandleMissingDependencies(output string) (bool, string, error) {
 		fmt.Println(indent + color.New(color.FgYellow).Sprintf("🛠 Installing %s...", dep.Name))
 
 		for _, cmdStr := range cmds {
-			if err := executeInstallCommand(cmdStr); err != nil {
+			if err := utils.ExecuteInstallCommand(cmdStr); err != nil {
 				return false, "", fmt.Errorf("failed to install %s at command '%s': %w", dep.Name, cmdStr, err)
 			}
 		}
@@ -398,33 +381,5 @@ func HandleMissingDependencies(output string) (bool, string, error) {
 	return false, os.Getenv("PATH"), nil
 }
 
-func getInstallCommands(dep Dependency) []string {
-	family := utils.GetLinuxFamily(false)
-	if runtime.GOOS == "linux" {
-		if cmds, ok := dep.Install[family]; ok {
-			return cmds
-		}
-	}
-	return dep.Install[runtime.GOOS]
-}
 
-func executeInstallCommand(installCmd string) error {
-	indent := "    "
-	_, err := exec.LookPath("sudo")
-	if err != nil && strings.Contains(installCmd, "sudo ") {
-		fmt.Println(indent + color.HiBlackString("ℹ 'sudo' not found, stripping from command..."))
-		installCmd = strings.ReplaceAll(installCmd, "sudo ", "")
-	}
 
-	var cmd *exec.Cmd
-	if runtime.GOOS == "windows" {
-		cmd = exec.Command("powershell", "-NoProfile", "-Command", installCmd)
-	} else {
-		cmd = exec.Command("bash", "-c", installCmd)
-	}
-
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	return cmd.Run()
-}
