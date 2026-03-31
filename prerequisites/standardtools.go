@@ -304,6 +304,107 @@ var Dependencies = []types.Dependency{
 			"linux":   {fmt.Sprintf("%s/.cargo/bin", os.Getenv("HOME"))},
 		},
 	},
+	{
+        Name: "Docker Compose",
+        Regexes: map[string]*regexp.Regexp{
+            "windows": regexp.MustCompile(`(?i)\bdocker-compose\b.*is not recognized`),
+            "default": regexp.MustCompile(`(?i)\bdocker-compose\b[:\s]+(?:command\s+)?not\s+found`),
+        },
+        Install: map[string][]string{
+            "darwin":  {"brew install docker-compose"},
+            "windows": {"winget install --id Docker.DockerDesktop -e"},
+            "debian":  {"sudo apt-get update", "sudo apt-get install -y docker-compose-plugin"},
+            "rpm":     {"sudo dnf install -y docker-compose-plugin"},
+            "arch":    {"sudo pacman -Sy --needed --noconfirm docker-compose"},
+        },
+    },
+	{
+        Name: "UV (Python Manager)",
+        Regexes: map[string]*regexp.Regexp{
+            "windows": regexp.MustCompile(`(?i)\buv\b.*is not recognized`),
+            "default": regexp.MustCompile(`(?i)\buv\b[:\s]+(?:command\s+)?not\s+found`),
+        },
+        Install: map[string][]string{
+            "darwin":  {"brew install uv"},
+            "windows": {"powershell -c \"irm https://astral.sh/uv/install.ps1 | iex\""},
+            "debian":  {"curl -LsSf https://astral.sh/uv/install.sh | sh"},
+            "rpm":     {"curl -LsSf https://astral.sh/uv/install.sh | sh"},
+            "arch":    {"curl -LsSf https://astral.sh/uv/install.sh | sh"},
+        },
+        PathAugment: map[string][]string{
+            "windows": {fmt.Sprintf("%s\\AppData\\Roaming\\uv\\bin", os.Getenv("USERPROFILE"))},
+            "darwin":  {fmt.Sprintf("%s/.local/bin", os.Getenv("HOME"))},
+            "linux":   {fmt.Sprintf("%s/.local/bin", os.Getenv("HOME"))},
+        },
+    },
+	{
+        Name: "Helm",
+        Regexes: map[string]*regexp.Regexp{
+            "windows": regexp.MustCompile(`(?i)\bhelm\b.*is not recognized`),
+            "default": regexp.MustCompile(`(?i)\bhelm\b[:\s]+(?:command\s+)?not\s+found`),
+        },
+        Install: map[string][]string{
+            "darwin":  {"brew install helm"},
+            "windows": {"winget install --id Helm.Helm -e"},
+            "debian":  {"curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash"},
+            "rpm":     {"curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash"},
+            "arch":    {"sudo pacman -Sy --needed --noconfirm helm"},
+        },
+    },
+	{
+        Name: "Composer",
+        Regexes: map[string]*regexp.Regexp{
+            "windows": regexp.MustCompile(`(?i)\bcomposer\b.*is not recognized`),
+            "default": regexp.MustCompile(`(?i)\bcomposer\b[:\s]+(?:command\s+)?not\s+found`),
+        },
+        Install: map[string][]string{
+            "darwin": {
+                "php -r \"copy('https://getcomposer.org/installer', 'composer-setup.php');\"",
+                "php composer-setup.php --install-dir=/usr/local/bin --filename=composer",
+                "php -r \"unlink('composer-setup.php');\"",
+            },
+            "windows": {"winget install --id PHP.Composer -e"},
+            "debian": {
+                "php -r \"copy('https://getcomposer.org/installer', 'composer-setup.php');\"",
+                "sudo php composer-setup.php --install-dir=/usr/local/bin --filename=composer",
+                "php -r \"unlink('composer-setup.php');\"",
+            },
+            "rpm": {
+                "php -r \"copy('https://getcomposer.org/installer', 'composer-setup.php');\"",
+                "sudo php composer-setup.php --install-dir=/usr/local/bin --filename=composer",
+                "php -r \"unlink('composer-setup.php');\"",
+            },
+            "arch": {"sudo pacman -Sy --needed --noconfirm composer"},
+        },
+    },
+	{
+        Name: "Unzip",
+        Regexes: map[string]*regexp.Regexp{
+            "windows": regexp.MustCompile(`(?i)\bunzip\b.*is not recognized`),
+            "default": regexp.MustCompile(`(?i)\bunzip\b[:\s]+(?:command\s+)?not\s+found`),
+        },
+        Install: map[string][]string{
+            "darwin":  {"brew install unzip"},
+            "windows": {"winget install -e --id GnuWin32.Unzip"},
+            "debian":  {"sudo apt-get update", "sudo apt-get install -y unzip"},
+            "rpm":     {"sudo dnf install -y unzip"},
+            "arch":    {"sudo pacman -Sy --needed --noconfirm unzip"},
+        },
+    },
+	{
+        Name: "PHP",
+        Regexes: map[string]*regexp.Regexp{
+            "windows": regexp.MustCompile(`(?i)\bphp\b.*is not recognized`),
+            "default": regexp.MustCompile(`(?i)\bphp\b[:\s]+(?:command\s+)?not\s+found`),
+        },
+        Install: map[string][]string{
+            "darwin":  {"brew install php"},
+            "windows": {"winget install --id PHP.PHP -e"},
+            "debian":  {"sudo apt-get update", "sudo apt-get install -y php-cli php-common php-curl"},
+            "rpm":     {"sudo dnf install -y php-cli php-common php-curl"},
+            "arch":    {"sudo pacman -Sy --needed --noconfirm php"},
+        },
+    },
 }
 
 func HandleMissingDependencies(output string) (bool, string, error) {
