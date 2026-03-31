@@ -735,9 +735,11 @@ func confirmAndRunInstallation(repo *types.RepoDocumentFull, method types.Instal
 			var runOpt bool
 			promptMsg := fmt.Sprintf("Run optional command: %s?", color.CyanString(optInstr.Command))
 			if optInstr.Meaning != "" {
-				promptMsg = fmt.Sprintf("Run optional command: %s? [%s]", color.CyanString(optInstr.Command), color.HiGreenString(optInstr.Meaning))
+				// \n\t moves the description to a new, slightly indented line
+				promptMsg = fmt.Sprintf("Run optional command: %s?\n  %s", 
+					color.CyanString(optInstr.Command), 
+					color.CyanString("↳ "+optInstr.Meaning)) // HiBlack (gray) looks elegant for hints
 			}
-
 			prompt := &survey.Confirm{
 				Message: promptMsg,
 				Default: true,
