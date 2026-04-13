@@ -4,6 +4,11 @@ Installerpedia is the authoritative source for software installation. It elimina
 
 The project is powered by **IPM (Installerpedia Manager)**, a CLI tool that turns complex, multi-step installation instructions into a simple, reliable one-liner.
 
+## See IPM in action
+
+
+https://github.com/user-attachments/assets/868dd83a-7ffe-4138-a29e-bbdf901b60fd
+
 
 ## Get Started with IPM
 
