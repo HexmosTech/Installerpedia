@@ -807,6 +807,7 @@ func runScriptWithStatus(repo *types.RepoDocumentFull, method types.InstallMetho
 
 	execDir := ""          //  PERSISTENT
 	pipSwapped := false    //  Track if we've already tried the pip/pip3 swap
+	pythonSwapped := false //  Track if we've already tried the python/python3 swap
 	brewSwapped := false   //  Track if we've already tried the MacPorts swap
 	var updatedPath string //  Define this to persist the new PATH across retries
 	buildAndRun := func(useSudo bool) (string, error) {
@@ -1163,6 +1164,30 @@ func runScriptWithStatus(repo *types.RepoDocumentFull, method types.InstallMetho
 				pipSwapped = true
 				fmt.Println(indent + color.New(color.FgYellow).Sprint("ℹ Pip not found. Trying alternative (pip/pip3)..."))
 				continue // 🔁 Retry loop with swapped pip command
+			}
+		}
+
+		// --- PYTHON / PYTHON3 ALTERNATIVE HANDLER ---
+		isPythonMissing := regexp.MustCompile(`(?i)(python\d?[:\s]+(?:command\s+)?not\s+found|python\d?.*is not recognized)`).MatchString(output)
+
+		if isPythonMissing && !pythonSwapped {
+			changed := false
+			for i, instr := range commands {
+				original := instr.Command
+				// Toggle between python and python3
+				if strings.Contains(original, "python ") {
+					commands[i].Command = strings.Replace(original, "python ", "python3 ", 1)
+					changed = true
+				} else if strings.Contains(original, "python3 ") {
+					commands[i].Command = strings.Replace(original, "python3 ", "python ", 1)
+					changed = true
+				}
+			}
+
+			if changed {
+				pythonSwapped = true
+				fmt.Println(indent + color.New(color.FgYellow).Sprint("ℹ Python not found. Trying alternative (python/python3)..."))
+				continue // 🔁 Retry loop with swapped python command
 			}
 		}
 
