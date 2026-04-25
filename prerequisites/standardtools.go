@@ -405,6 +405,35 @@ var Dependencies = []types.Dependency{
             "arch":    {"sudo pacman -Sy --needed --noconfirm php"},
         },
     },
+	{
+		Name: "Bun",
+		Regexes: map[string]*regexp.Regexp{
+			"windows": regexp.MustCompile(`(?i)\bbun\b.*is not recognized`),
+			"default": regexp.MustCompile(`(?i)\bbun\b[:\s]+(?:command\s+)?not\s+found`),
+		},
+		Install: map[string][]string{
+			"darwin": {
+				"curl -fsSL https://bun.sh/install | bash",
+			},
+			"windows": {
+				"powershell -c \"irm bun.sh/install.ps1 | iex\"",
+			},
+			"debian": {
+				"curl -fsSL https://bun.sh/install | bash",
+			},
+			"rpm": {
+				"curl -fsSL https://bun.sh/install | bash",
+			},
+			"arch": {
+				"curl -fsSL https://bun.sh/install | bash",
+			},
+		},
+		PathAugment: map[string][]string{
+			"darwin": {fmt.Sprintf("%s/.bun/bin", os.Getenv("HOME"))},
+			"linux":  {fmt.Sprintf("%s/.bun/bin", os.Getenv("HOME"))},
+			"windows": {fmt.Sprintf("%s\\.bun\\bin", os.Getenv("USERPROFILE"))},
+		},
+	},
 }
 
 func HandleMissingDependencies(output string) (bool, string, error) {

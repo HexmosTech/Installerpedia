@@ -69,7 +69,7 @@ var (
 			`(\b(irm|iwr|iex)\b[^\n]*\.ps1)`, // Downloaders + .ps1 script
 	)
 
-	serverStartRegex = regexp.MustCompile(`(?i)\b(npm\s+run\s+(dev|start)|npm\s+start|yarn\s+dev|yarn\s+start|pnpm\s+dev|pnpm\s+start|vite|next\s+dev|node\s+server\.js)\b`)
+	serverStartRegex = regexp.MustCompile(`(?i)\b(npm\s+run\s+(dev|start)|npm\s+start|yarn\s+dev|yarn\s+start|pnpm\s+dev|pnpm\s+start|bun\s+run\s+(dev|start|dev:[a-zA-Z0-9\-_]+)|vite|next\s+dev|node\s+server\.js)\b`)
 )
 
 func isServerStartCommand(cmd string) bool {
