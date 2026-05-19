@@ -54,6 +54,20 @@ var (
 
 const indent = "    "
 
+// Repos that should never trigger AI auto-generation of install methods
+var autoGenerationExclusions = []string{
+	"HexmosTech/git-lrc",
+}
+
+func isAutoGenerationExcluded(repoName string) bool {
+	for _, excluded := range autoGenerationExclusions {
+		if repoName == excluded {
+			return true
+		}
+	}
+	return false
+}
+
 // 1. Define the regex patterns for specific package managers
 var (
 	debianRegex   = regexp.MustCompile(`\b(apt|apt-get|dpkg)\b`)
@@ -310,7 +324,7 @@ func runInstallFlow(repo *types.RepoDocumentFull) {
 		isBetterMethod := false // Reset for this iteration
 		if len(remainingMethods) == 0 || !hasCompatible(remainingMethods) {
 			// Only auto-trigger if we haven't tried generating for this specific "all incompatible" state yet
-			if !hasAttemptedAutoGeneration {
+			if !hasAttemptedAutoGeneration && !isAutoGenerationExcluded(repo.Name) {
 				fmt.Printf("\n🔍 %s\n", color.CyanString("No compatible methods found for your system. Searching for alternatives..."))
 				newMethods, err := live_generation.ProcessGeneratedRepoMethod(repo.Name, "github", utils.GetSupplementedOS())
 				hasAttemptedAutoGeneration = true // Mark that we've tried
