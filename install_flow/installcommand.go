@@ -823,6 +823,7 @@ func runScriptWithStatus(repo *types.RepoDocumentFull, method types.InstallMetho
 	pipSwapped := false    //  Track if we've already tried the pip/pip3 swap
 	pythonSwapped := false //  Track if we've already tried the python/python3 swap
 	brewSwapped := false   //  Track if we've already tried the MacPorts swap
+	pathHintApplied := false //  Track if we've already applied a self-reported PATH hint
 	var updatedPath string //  Define this to persist the new PATH across retries
 	buildAndRun := func(useSudo bool) (string, error) {
 		var script strings.Builder
@@ -1202,6 +1203,41 @@ func runScriptWithStatus(repo *types.RepoDocumentFull, method types.InstallMetho
 				pythonSwapped = true
 				fmt.Println(indent + color.New(color.FgYellow).Sprint("ℹ Python not found. Trying alternative (python/python3)..."))
 				continue // 🔁 Retry loop with swapped python command
+			}
+		}
+
+		// --- GENERIC "SELF-REPORTED PATH HINT" HANDLER ---
+		// Many install scripts (e.g. curl ... | sh installers like openfang's)
+		// install a binary, append a PATH export line to a shell rc file, and
+		// print a hint such as "export PATH=/some/dir:$PATH" instead of
+		// updating the current shell. Since all commands in a method run
+		// inside a single script, that rc-file change never takes effect
+		// mid-script, so the very next command fails with "command not
+		// found" even though installation succeeded.
+		//
+		// Instead of hardcoding this per-repo, we detect the hint the
+		// script already printed and apply it to the process PATH before
+		// retrying - generalizing the same approach used for known deps
+		// via PathAugment.
+		if !pathHintApplied && strings.Contains(strings.ToLower(output), "command not found") {
+			pathHintRegex := regexp.MustCompile(`export PATH=([^\s:"']+)`)
+			if matches := pathHintRegex.FindStringSubmatch(output); len(matches) > 1 {
+				hintedDir := matches[1]
+				pathSep := ":"
+				if runtime.GOOS == "windows" {
+					pathSep = ";"
+				}
+				base := updatedPath
+				if base == "" {
+					base = os.Getenv("PATH")
+				}
+				if !strings.Contains(base, hintedDir) {
+					updatedPath = hintedDir + pathSep + base
+					pathHintApplied = true
+					fmt.Println(indent + color.New(color.FgYellow).
+						Sprintf("i Detected a PATH hint in the output (%s). Retrying with updated PATH...", hintedDir))
+					continue // retry loop with the hinted PATH applied
+				}
 			}
 		}
 
